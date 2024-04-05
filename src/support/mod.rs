@@ -2,30 +2,30 @@ use crate::polkadot::polkadot;
 use polkadot::runtime_types::pallet_support::types::asset::*;
 use polkadot::runtime_types::pallet_support::types::market::*;
 use polkadot::runtime_types::pallet_support::types::trading_account::TradingAccountMinimal;
-use sp_core::ConstU32;
 use primitive_types::U256;
-use sp_core::bounded_vec::BoundedVec;
-use sp_arithmetic::{fixed_point::FixedI128, traits::CheckedDiv, FixedPointNumber};
 use scale_info::TypeInfo;
-use starknet_crypto::{sign, FieldElement};
-use starknet_crypto::poseidon_hash_many;
-use starknet_core::crypto::compute_hash_on_elements;
-use starknet_ff::FromByteSliceError;
+use sp_arithmetic::{fixed_point::FixedI128, traits::CheckedDiv, FixedPointNumber};
+use sp_core::bounded_vec::BoundedVec;
+use sp_core::ConstU32;
 use sp_io::hashing::blake2_256;
+use starknet_core::crypto::compute_hash_on_elements;
+use starknet_crypto::poseidon_hash_many;
+use starknet_crypto::{sign, FieldElement};
+use starknet_ff::FromByteSliceError;
 
-pub mod types;
-pub mod traits;
-pub mod asset_helper;
-pub mod market_helper;
-pub mod converter;
 pub mod account_helper;
+pub mod asset_helper;
+pub mod converter;
+pub mod market_helper;
+pub mod traits;
+pub mod types;
 
-pub use types::*;
-pub use traits::*;
-pub use asset_helper::*;
-pub use market_helper::*;
-pub use converter::*;
 pub use account_helper::*;
+pub use asset_helper::*;
+pub use converter::*;
+pub use market_helper::*;
+pub use traits::*;
+pub use types::*;
 
 pub mod utilities {
     use super::*;
@@ -57,25 +57,41 @@ pub mod utilities {
 
         // fee details
         let mut fee_details_maker = Vec::<BaseFee>::new();
-        let base_fee1 = BaseFee { volume: 0.into(), fee: FixedI128::from_inner(20000000000000000) };
+        let base_fee1 = BaseFee {
+            volume: 0.into(),
+            fee: FixedI128::from_inner(20000000000000000),
+        };
         fee_details_maker.push(base_fee1);
-        let base_fee2 = BaseFee { volume: 1000.into(), fee: FixedI128::from_inner(15000000000000000) };
+        let base_fee2 = BaseFee {
+            volume: 1000.into(),
+            fee: FixedI128::from_inner(15000000000000000),
+        };
         fee_details_maker.push(base_fee2);
-        let base_fee3 = BaseFee { volume: 5000.into(), fee: FixedI128::from_inner(10000000000000000) };
+        let base_fee3 = BaseFee {
+            volume: 5000.into(),
+            fee: FixedI128::from_inner(10000000000000000),
+        };
         fee_details_maker.push(base_fee3);
 
         let mut fee_details_taker: Vec<BaseFee> = Vec::new();
-        let base_fee1 = BaseFee { volume: 0.into(), fee: FixedI128::from_inner(50000000000000000) };
-        let base_fee2 = BaseFee { volume: 1000.into(), fee: FixedI128::from_inner(40000000000000000) };
-        let base_fee3 = BaseFee { volume: 5000.into(), fee: FixedI128::from_inner(35000000000000000) };
+        let base_fee1 = BaseFee {
+            volume: 0.into(),
+            fee: FixedI128::from_inner(50000000000000000),
+        };
+        let base_fee2 = BaseFee {
+            volume: 1000.into(),
+            fee: FixedI128::from_inner(40000000000000000),
+        };
+        let base_fee3 = BaseFee {
+            volume: 5000.into(),
+            fee: FixedI128::from_inner(35000000000000000),
+        };
         fee_details_taker.push(base_fee1);
         fee_details_taker.push(base_fee2);
         fee_details_taker.push(base_fee3);
 
         (fee_details_maker, fee_details_taker)
     }
-
 }
 
 pub use utilities::*;
-
