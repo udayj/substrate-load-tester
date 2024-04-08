@@ -1,21 +1,18 @@
 
 #![allow(missing_docs)]
 use sp_core::H256;
-use subxt::config::{DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
+use subxt::config::{DefaultExtrinsicParamsBuilder};
 use subxt::{OnlineClient, PolkadotConfig};
-use subxt_signer::sr25519::dev;
 use subxt_signer::sr25519::Keypair;
 use subxt_signer::SecretUri;
 use std::str::FromStr;
 use substrate_load_tester::polkadot::polkadot;
-use std::thread;
 use tokio::time::{sleep, Duration};
-use polkadot::runtime_types::pallet_support::types::asset::*;
 use primitive_types::U256;
-use sp_core::bounded_vec::BoundedVec;
 use substrate_load_tester::support::*;
 use std::time::{SystemTime, UNIX_EPOCH};
 use substrate_load_tester::config::*;
+use chrono::{Timelike, Utc};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -30,7 +27,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         setup(&config).await?;
     }
     
+    
     // Send execute_trade txs in separate threads from the different endowed accounts
+    let start_time = Utc::now();
+    
+    println!("Start sending traffic at time UTC : {}:{}:{}", start_time.hour(), start_time.minute(), start_time.second());
+
     for j in 1..(config.duration as i32 +1){
         let mut threads = vec![];
         
@@ -59,9 +61,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 //println!("{:#?}",alice_order_polkadot);
                 let execute_trade_tx = polkadot::tx().trading().execute_trade(
                     convert_to_u256(U256::from((config.nonce as i32)*100000+j*20+2+i)), 
-                    convertToFixedI128(1.into()), 
+                    convert_to_fixed_i128(1.into()), 
                     btc_usdc().market.id, 
-                    convertToFixedI128(1.into()), 
+                    convert_to_fixed_i128(1.into()), 
                     vec![alice_order_polkadot, bob_order_polkadot], 
                     current_timestamp.as_millis() as u64);
                 let validation = api.tx().validate(&execute_trade_tx);
@@ -83,7 +85,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // This acts like a batch separator and we send approx tps number of transactions in a single slot time
         sleep(Duration::from_millis(500)).await;
     }
+
+    let stop_time = Utc::now();
     
+    println!("Stop sending traffic at time UTC: {}:{}:{}", stop_time.hour(), stop_time.minute(), stop_time.second());
+    println!("Total {} transactions sent in {} milli seconds", 
+        (config.duration*config.tps as u32), (stop_time-start_time).num_milliseconds());
     Ok(())
 }
 
@@ -189,15 +196,13 @@ pub async fn setup(config: &Config) -> Result<(), Box<dyn std::error::Error>>{
     //println!("{:#?}",alice_order_polkadot);
     let execute_trade_tx = polkadot::tx().trading().execute_trade(
         convert_to_u256(U256::from(1_u8)), 
-        convertToFixedI128(1.into()), 
+        convert_to_fixed_i128(1.into()), 
         btc_usdc().market.id, 
-        convertToFixedI128(1.into()), 
+        convert_to_fixed_i128(1.into()), 
         vec![alice_order_polkadot, bob_order_polkadot], 
         current_timestamp.as_millis() as u64);
     let validation = api.tx().validate(&execute_trade_tx);
     assert_eq!(validation.is_ok(),true);
-    println!("Tx is valid");
-
     
     let _ = api.tx().sign_and_submit_then_watch_default(&execute_trade_tx, &signer)
     .await?

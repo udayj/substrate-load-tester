@@ -16,7 +16,7 @@ pub fn get_config() -> Result<Config, Box<dyn std::error::Error>> {
             Arg::with_name("tps")
                 .short("t")
                 .long("tps")
-                .help("Sets the number of transactions per second (u8) / default 10")
+                .help("Sets the number of transactions per second (u8)")
                 .takes_value(true)
                 .validator(|val| match val.parse::<u8>().is_ok() {
                     true => Ok(()),
@@ -38,7 +38,7 @@ pub fn get_config() -> Result<Config, Box<dyn std::error::Error>> {
             Arg::with_name("nonce")
                 .short("n")
                 .long("nonce")
-                .help("Initial nonce for execute_trade caller accounts / default 0")
+                .help("Initial nonce for execute_trade caller accounts")
                 .takes_value(true)
                 .validator(|val| match val.parse::<u32>().is_ok() {
                     true => Ok(()),
@@ -51,7 +51,7 @@ pub fn get_config() -> Result<Config, Box<dyn std::error::Error>> {
             Arg::with_name("duration")
                 .short("d")
                 .long("duration")
-                .help("Sets the approx. duration for sending tps in seconds (u32) / default 20 s")
+                .help("Sets the approx. duration for sending tps in seconds")
                 .takes_value(true)
                 .validator(|val| match val.parse::<u32>().is_ok() {
                     true => Ok(()),

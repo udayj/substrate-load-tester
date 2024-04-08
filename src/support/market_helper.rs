@@ -1,18 +1,11 @@
 use super::converter::*;
 use crate::polkadot::polkadot;
-use polkadot::runtime_types::pallet_support::types::asset::*;
+
 use polkadot::runtime_types::pallet_support::types::market::*;
-use polkadot::runtime_types::pallet_support::types::trading_account::TradingAccountMinimal;
-use primitive_types::U256;
-use scale_info::TypeInfo;
-use sp_arithmetic::{fixed_point::FixedI128, traits::CheckedDiv, FixedPointNumber};
+
+use sp_arithmetic::{fixed_point::FixedI128};
 use sp_core::bounded_vec::BoundedVec;
 use sp_core::ConstU32;
-use sp_io::hashing::blake2_256;
-use starknet_core::crypto::compute_hash_on_elements;
-use starknet_crypto::poseidon_hash_many;
-use starknet_crypto::{sign, FieldElement};
-use starknet_ff::FromByteSliceError;
 
 pub fn btc_usdc() -> ExtendedMarket {
     let mut metadata_url: BoundedVec<u8, ConstU32<25>> = BoundedVec::new();
@@ -31,22 +24,22 @@ pub fn btc_usdc() -> ExtendedMarket {
             is_tradable: true,
             is_archived: false,
             ttl: 3600,
-            tick_size: convertToFixedI128(1.into()),
+            tick_size: convert_to_fixed_i128(1.into()),
             tick_precision: 1,
-            step_size: convertToFixedI128(1.into()),
+            step_size: convert_to_fixed_i128(1.into()),
             step_precision: 1,
-            minimum_order_size: convertToFixedI128(1.into()),
-            minimum_leverage: convertToFixedI128(1.into()),
-            maximum_leverage: convertToFixedI128(10.into()),
-            currently_allowed_leverage: convertToFixedI128(8.into()),
-            maintenance_margin_fraction: convertToFixedI128(FixedI128::from_inner(
+            minimum_order_size: convert_to_fixed_i128(1.into()),
+            minimum_leverage: convert_to_fixed_i128(1.into()),
+            maximum_leverage: convert_to_fixed_i128(10.into()),
+            currently_allowed_leverage: convert_to_fixed_i128(8.into()),
+            maintenance_margin_fraction: convert_to_fixed_i128(FixedI128::from_inner(
                 75000000000000000,
             )),
-            initial_margin_fraction: convertToFixedI128(1.into()),
-            incremental_initial_margin_fraction: convertToFixedI128(1.into()),
-            incremental_position_size: convertToFixedI128(1.into()),
-            baseline_position_size: convertToFixedI128(1.into()),
-            maximum_position_size: convertToFixedI128(25000.into()),
+            initial_margin_fraction: convert_to_fixed_i128(1.into()),
+            incremental_initial_margin_fraction: convert_to_fixed_i128(1.into()),
+            incremental_position_size: convert_to_fixed_i128(1.into()),
+            baseline_position_size: convert_to_fixed_i128(1.into()),
+            maximum_position_size: convert_to_fixed_i128(25000.into()),
         },
         metadata_url: polkadot::runtime_types::bounded_collections::bounded_vec::BoundedVec(
             metadata_url.to_vec(),

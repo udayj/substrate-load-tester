@@ -1,20 +1,11 @@
 use super::types::*;
 use crate::polkadot::polkadot;
-use polkadot::runtime_types::pallet_support::types::asset::*;
-use polkadot::runtime_types::pallet_support::types::market::*;
-use polkadot::runtime_types::pallet_support::types::trading_account::TradingAccountMinimal;
 use primitive_types::U256;
-use scale_info::TypeInfo;
-use sp_arithmetic::{fixed_point::FixedI128, traits::CheckedDiv, FixedPointNumber};
-use sp_core::bounded_vec::BoundedVec;
-use sp_core::ConstU32;
-use sp_io::hashing::blake2_256;
-use starknet_core::crypto::compute_hash_on_elements;
-use starknet_crypto::poseidon_hash_many;
-use starknet_crypto::{sign, FieldElement};
+use sp_arithmetic::{fixed_point::FixedI128};
+use starknet_crypto::FieldElement;
 use starknet_ff::FromByteSliceError;
 
-pub fn convertToFixedI128(
+pub fn convert_to_fixed_i128(
     num: FixedI128,
 ) -> polkadot::runtime_types::sp_arithmetic::fixed_point::FixedI128 {
     polkadot::runtime_types::sp_arithmetic::fixed_point::FixedI128(num.into_inner())
@@ -34,10 +25,10 @@ pub fn convert_to_polkadot_order(
         order_type: convert_to_order_type(order.order_type),
         direction: convert_to_direction(order.direction),
         side: convert_to_side(order.side),
-        price: convertToFixedI128(order.price),
-        size: convertToFixedI128(order.size),
-        leverage: convertToFixedI128(order.leverage),
-        slippage: convertToFixedI128(order.slippage),
+        price: convert_to_fixed_i128(order.price),
+        size: convert_to_fixed_i128(order.size),
+        leverage: convert_to_fixed_i128(order.leverage),
+        slippage: convert_to_fixed_i128(order.slippage),
         post_only: order.post_only,
         time_in_force: convert_to_time_in_force(order.time_in_force),
         signature_info: convert_to_signature_info(order.signature_info),
@@ -120,8 +111,8 @@ pub fn convert_to_polkadot_base_fee(
     for base_fee in base_fees {
         let converted_base_fee =
             polkadot::runtime_types::pallet_support::types::trading_fees::BaseFee {
-                volume: convertToFixedI128(base_fee.volume),
-                fee: convertToFixedI128(base_fee.fee),
+                volume: convert_to_fixed_i128(base_fee.volume),
+                fee: convert_to_fixed_i128(base_fee.fee),
             };
         ret_base_fees.push(converted_base_fee);
     }
