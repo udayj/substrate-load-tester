@@ -3,7 +3,6 @@ pub struct Config {
     pub tps: u8,
     pub url: String,
     pub duration: u32,
-    pub nonce: u32,
     pub setup_required: bool,
 }
 
@@ -24,7 +23,6 @@ pub fn get_config() -> Result<Config, Box<dyn std::error::Error>> {
                 })
                 .default_value("10")
                 .required(false)
-                .conflicts_with("setup_not_required"),
         )
         .arg(
             Arg::with_name("url")
@@ -32,19 +30,6 @@ pub fn get_config() -> Result<Config, Box<dyn std::error::Error>> {
                 .long("url")
                 .help("Sets the URL to connect to - default ws://127.0.0.1:9944")
                 .takes_value(true)
-                .required(false),
-        )
-        .arg(
-            Arg::with_name("nonce")
-                .short("n")
-                .long("nonce")
-                .help("Initial nonce for execute_trade caller accounts")
-                .takes_value(true)
-                .validator(|val| match val.parse::<u32>().is_ok() {
-                    true => Ok(()),
-                    _ => Err(String::from("unexpected value of duration")),
-                })
-                .default_value("0")
                 .required(false),
         )
         .arg(
@@ -66,7 +51,6 @@ pub fn get_config() -> Result<Config, Box<dyn std::error::Error>> {
                 .long("setup-not-required")
                 .help("Indicates setup is not required - default setup required")
                 .takes_value(false)
-                .conflicts_with("tps"),
         )
         .get_matches();
 
@@ -82,24 +66,18 @@ pub fn get_config() -> Result<Config, Box<dyn std::error::Error>> {
         .value_of("duration")
         .map(|val| val.parse::<u32>().unwrap())
         .unwrap();
-    let nonce = matches
-        .value_of("nonce")
-        .map(|val| val.parse::<u32>().unwrap())
-        .unwrap();
     let setup_required = !matches.is_present("setup_not_required");
 
     // Use the parsed values here
     println!("TPS: {:?}", tps);
     println!("URL: {}", url.clone());
     println!("Duration: {:?}", duration);
-    println!("Nonce: {:?}", nonce);
     println!("Setup required: {:?}", setup_required);
 
     Ok(Config {
         tps,
         url,
         duration,
-        nonce,
         setup_required,
     })
 }

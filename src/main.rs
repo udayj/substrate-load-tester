@@ -27,16 +27,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         setup(&config).await?;
     }
     
-    
-    // Send execute_trade txs in separate threads from the different endowed accounts
-    let start_time = Utc::now();
-    
-    println!("Start sending traffic at time UTC : {}:{}:{}", start_time.hour(), start_time.minute(), start_time.second());
+    // Provide funds to the different accounts which will be sending execute_trade txs in separate threads
+    // Calibrate initial nonces for the different accounts
+    let mut nonces = vec![];
+    for i in 1..(config.tps as i32 + 1) {
+        
+        let api = OnlineClient::<PolkadotConfig>::from_insecure_url(config.url.as_str()).await.unwrap();
+        let signer = Keypair::from_uri(&SecretUri::from_str("//Alice").unwrap()).unwrap();
+        println!("Providing funds to Account {}",i);
+        let account_uri = format!("//Account{}",i);
+        let temp_signer = Keypair::from_uri(&SecretUri::from_str(account_uri.as_str()).unwrap()).unwrap();
+        let account = temp_signer.public_key().into();
+        let temp_signer_id = temp_signer.public_key().into();
+        let set_balance_tx = polkadot::Call::Balances(polkadot::balances::Call::force_set_balance { who: temp_signer_id, new_free: 2000000000000000});
+        let sudo_tx = polkadot::tx().sudo().sudo(set_balance_tx);
+        let _ = api.tx().sign_and_submit_then_watch_default(&sudo_tx, &signer)
+        .await?
+        .wait_for_finalized_success()
+        .await?;
+ 
+        let query = polkadot::storage().system().account(&account);
+        let result = api
+            .storage()
+            .at_latest()
+            .await?
+            .fetch(&query)
+            .await?;
+        let nonce = result.unwrap().nonce;
+        println!("Nonce for account {} : {}",i,nonce);
+        nonces.push(nonce);
+    }
 
+    let start_time = Utc::now();
+    println!("Start sending traffic at time UTC : {}:{}:{}", start_time.hour(), start_time.minute(), start_time.second());
+    // Send execute_trade txs in separate threads from the different endowed accounts
     for j in 1..(config.duration as i32 +1){
         let mut threads = vec![];
-        
+        let thread_nonces = nonces.clone();
         for i in 1..(config.tps as i32 + 1) {
+            let nonce = thread_nonces[i as usize - 1];
             let thread_url = config.url.clone();
             let thread = tokio::spawn(async move {
                 let api = OnlineClient::<PolkadotConfig>::from_insecure_url(thread_url.as_str()).await.unwrap();
@@ -46,10 +75,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let temp_signer = Keypair::from_uri(&SecretUri::from_str(account_uri.as_str()).unwrap()).unwrap();
                 
                 let alice_order =
-                        Order::new(U256::from(300000000_i32+(config.nonce as i32)*100000 + j*20+i), alice_id)
+                        Order::new(U256::from(300000000_i32+(nonce as i32)*100000 + j*20+i), alice_id)
                         .set_timestamp(current_timestamp.as_millis() as u64)
                         .sign_order(get_private_key(U256(alice().pub_key.0)));
-                let bob_order = Order::new(U256::from(500000000_i32+(config.nonce as i32)*100000+j*20+i), bob_id)
+                let bob_order = Order::new(U256::from(500000000_i32+(nonce as i32)*100000+j*20+i), bob_id)
                         .set_direction(Direction::Short)
                         .set_order_type(OrderType::Market)
                         .set_timestamp(current_timestamp.as_millis() as u64)
@@ -60,7 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 
                 //println!("{:#?}",alice_order_polkadot);
                 let execute_trade_tx = polkadot::tx().trading().execute_trade(
-                    convert_to_u256(U256::from((config.nonce as i32)*100000+j*20+2+i)), 
+                    convert_to_u256(U256::from((nonce as i32)*100000+j*20+2+i)), 
                     convert_to_fixed_i128(1.into()), 
                     btc_usdc().market.id, 
                     convert_to_fixed_i128(1.into()), 
@@ -69,9 +98,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let validation = api.tx().validate(&execute_trade_tx);
                 assert_eq!(validation.is_ok(),true);
                 println!("{}",format!("tx is valid: epoch cycle={} account={}",j, i).as_str());
-                println!("nonce={:?}",config.nonce as u64 +(j-1) as u64);
+                println!("nonce={:?}",nonce as u64 +(j-1) as u64);
     
-                let _ = api.tx().sign_and_submit(&execute_trade_tx, &temp_signer, DefaultExtrinsicParamsBuilder::new().nonce(config.nonce as u64 + (j-1) as u64).build())
+                let _ = api.tx().sign_and_submit(&execute_trade_tx, &temp_signer, DefaultExtrinsicParamsBuilder::new().nonce( nonce as u64 + (j-1) as u64).build())
                 .await.unwrap_or(H256::zero());
             });
 
@@ -91,13 +120,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Stop sending traffic at time UTC: {}:{}:{}", stop_time.hour(), stop_time.minute(), stop_time.second());
     println!("Total {} transactions sent in {} milli seconds", 
         (config.duration*config.tps as u32), (stop_time-start_time).num_milliseconds());
+
     Ok(())
 }
 
 pub async fn setup(config: &Config) -> Result<(), Box<dyn std::error::Error>>{
 
     let start = SystemTime::now();
-    let current_timestamp = start.duration_since(UNIX_EPOCH).unwrap();
 
     // Create a new API client, configured to talk to ZKX substrate nodes
     // This uses standard polkadot config
@@ -125,7 +154,7 @@ pub async fn setup(config: &Config) -> Result<(), Box<dyn std::error::Error>>{
     .await?;
 
     // Initialize accounts which will trade
-    println!("Initialize accounts");
+    println!("Initialize trading accounts");
     let accounts = vec![alice(),bob()];
     let account_tx = polkadot::tx().trading_account().add_accounts(accounts);
 
@@ -176,7 +205,7 @@ pub async fn setup(config: &Config) -> Result<(), Box<dyn std::error::Error>>{
     .wait_for_finalized_success()
     .await?;
     
-    println!("Sending a simple execute_trade");
+    /*println!("Sending a simple execute_trade");
     let alice_id: U256 = get_trading_account_id(alice());
     let bob_id: U256 = get_trading_account_id(bob());
 
@@ -208,20 +237,6 @@ pub async fn setup(config: &Config) -> Result<(), Box<dyn std::error::Error>>{
     .await?
     .wait_for_finalized_success()
     .await?;
-
-    // Provide fund to the different accounts which will be sending execute_trade txs in separate threads
-    for i in 1..(config.tps as i32 + 1) {
-        println!("Providing funds to Account {}",i);
-        let account_uri = format!("//Account{}",i);
-        let temp_signer = Keypair::from_uri(&SecretUri::from_str(account_uri.as_str()).unwrap()).unwrap();
-        let temp_signer_id = temp_signer.public_key().into();
-        let set_balance_tx = polkadot::Call::Balances(polkadot::balances::Call::force_set_balance { who: temp_signer_id, new_free: 2000000000000000});
-        let sudo_tx = polkadot::tx().sudo().sudo(set_balance_tx);
-        let _ = api.tx().sign_and_submit_then_watch_default(&sudo_tx, &signer)
-        .await?
-        .wait_for_finalized_success()
-        .await?;
-        
-    }
+    */
     Ok(())
 }
