@@ -71,7 +71,7 @@ pub fn get_config() -> Result<Config, Box<dyn std::error::Error>> {
     // Use the parsed values here
     println!("TPS: {:?}", tps);
     println!("URL: {}", url.clone());
-    println!("Duration: {:?}", duration);
+    println!("Duration approx: {:?} seconds", duration);
     println!("Setup required: {:?}", setup_required);
 
     Ok(Config {
