@@ -215,7 +215,7 @@ impl Order {
             time_in_force: TimeInForce::GTC,
             signature_info: SignatureInfo {
                 liquidator_pub_key: U256::zero(),
-                hash_type: HashType::Pedersen,
+                hash_type: HashType::Poseidon,
                 sig_r: U256::zero(),
                 sig_s: U256::zero(),
             },

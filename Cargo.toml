@@ -21,6 +21,9 @@ starknet-ff = { version = "0.3.4", default-features = false }
 sp-io = { version = "23.0.0", git = "https://github.com/paritytech/substrate.git", default-features = true, branch = "polkadot-v1.0.0" }
 clap = "2.33"
 chrono = "0.4.37"
+secp256k1 = { version = "0.24.0", default-features = false, features = ["recovery", "alloc"]}
+sp-core-hashing = { version = "9.0.0", default-features = false}
+schnorrkel = { version = "0.9.1", features = ["preaudit_deprecated", "u64_backend"], default-features = false }
 
 [features]
 default = ["std"]

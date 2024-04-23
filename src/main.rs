@@ -1,6 +1,8 @@
 
 #![allow(missing_docs)]
-use sp_core::H256;
+use hex::ToHex;
+use secp256k1::ffi::recovery;
+use sp_core::{ecdsa, Pair, H256};
 use subxt::config::{DefaultExtrinsicParamsBuilder};
 use subxt::{OnlineClient, PolkadotConfig};
 use subxt_signer::sr25519::Keypair;
@@ -59,12 +61,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         nonces.push(nonce);
     }
 
+    //sleep(Duration::from_millis(120000)).await;
+
     let start_time = Utc::now();
     println!("Start sending traffic at time UTC : {}:{}:{}", start_time.hour(), start_time.minute(), start_time.second());
     // Send execute_trade txs in separate threads from the different endowed accounts
-    let mut threads = vec![];
+    
     for j in 1..(config.duration as i32 +1){
         
+        let mut threads = vec![];
         let thread_nonces = nonces.clone();
         for i in 1..(config.tps as i32 + 1) {
             let nonce = thread_nonces[i as usize - 1];
@@ -77,10 +82,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let temp_signer = Keypair::from_uri(&SecretUri::from_str(account_uri.as_str()).unwrap()).unwrap();
                 
                 let alice_order =
-                        Order::new(U256::from(300000000_i32+(nonce as i32)*100000 + j*20+i), alice_id)
+                        Order::new(U256::from((nonce as i32) + j+i*1000000), alice_id)
                         .set_timestamp(current_timestamp.as_millis() as u64)
                         .sign_order(get_private_key(U256(alice().pub_key.0)));
-                let bob_order = Order::new(U256::from(500000000_i32+(nonce as i32)*100000+j*20+i), bob_id)
+               
+                let bob_order = Order::new(U256::from(700000000_i32+(nonce as i32)+j+i*1000000), bob_id)
                         .set_direction(Direction::Short)
                         .set_order_type(OrderType::Market)
                         .set_timestamp(current_timestamp.as_millis() as u64)
@@ -104,7 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 */
                 //println!("{:#?}",alice_order_polkadot);
                 let execute_trade_tx = polkadot::tx().trading().execute_trade(
-                    convert_to_u256(U256::from((nonce as i32)*100000+j*20+2+i)), 
+                    convert_to_u256(U256::from((nonce as i32)+j+i*10000000)), 
                     convert_to_fixed_i128(1.into()), 
                     btc_usdc().market.id, 
                     convert_to_fixed_i128(1.into()), 
@@ -123,17 +129,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             threads.push(thread);
         }
 
-        /*for thread in threads.iter_mut() {
+        for thread in threads.iter_mut() {
             thread.await.unwrap();
-        }*/
+        }
 
         // This acts like a batch separator and we send approx tps number of transactions in a single slot time
         //sleep(Duration::from_millis(500)).await;
     }
 
-    for thread in threads.iter_mut() {
+    /*for thread in threads.iter_mut() {
             thread.await.unwrap();
-    }
+    }*/
 
     let stop_time = Utc::now();
     
